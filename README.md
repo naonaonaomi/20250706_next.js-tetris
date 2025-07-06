@@ -1,20 +1,19 @@
 # Next.js テトリスゲーム
 
-Next.js 14 (App Router) で構築された認証機能付きフルスタックテトリスゲームです。
+Next.js 14 (App Router) で構築されたシンプルなテトリスゲームです。
 
 ## 機能
 
-- **認証機能**: NextAuth.js を使用した Google OAuth ログイン
 - **テトリスゲーム**: React フックを使用したフル機能テトリス実装
-- **スコア記録**: ハイスコアの保存と閲覧
 - **レスポンシブデザイン**: Tailwind CSS によるモバイルフレンドリーなインターフェース
-- **リアルタイムランキング**: メールアドレスをマスクした上位10位のリーダーボード
+- **リアルタイムスコア**: ゲーム内でのリアルタイムスコア計算
+- **ライン消去**: 複数ラインの同時消去に対応
+- **レベルアップ**: ライン消去に応じたレベルアップとスピード調整
 
 ## 技術スタック
 
-- **フロントエンド**: Next.js 14 (App Router), React, Tailwind CSS
-- **認証**: NextAuth.js (Google OAuth)
-- **データベース**: Prisma + PostgreSQL
+- **フロントエンド**: Next.js 14 (App Router), React, TypeScript
+- **スタイリング**: Tailwind CSS
 - **デプロイ**: Vercel 対応
 
 ## セットアップ
@@ -22,8 +21,6 @@ Next.js 14 (App Router) で構築された認証機能付きフルスタック�
 ### 前提条件
 
 - Node.js 18+ 
-- PostgreSQL データベース（ローカルまたは PlanetScale などのクラウド）
-- Google OAuth 認証情報
 
 ### インストール
 
@@ -38,33 +35,7 @@ cd nextjs-tetris
 npm install
 ```
 
-3. 環境変数の設定:
-```bash
-cp .env.example .env
-```
-
-環境変数を設定してください:
-```env
-DATABASE_URL="postgresql://username:password@localhost:5432/tetris_db"
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret-key-here"
-GOOGLE_CLIENT_ID="your-google-client-id"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
-```
-
-4. データベースのセットアップ:
-```bash
-npx prisma db push
-# または開発環境でマイグレーションを使用する場合
-npx prisma migrate dev
-```
-
-5. Prisma クライアントの生成:
-```bash
-npx prisma generate
-```
-
-6. 開発サーバーの起動:
+3. 開発サーバーの起動:
 ```bash
 npm run dev
 ```
@@ -79,62 +50,57 @@ npm run dev
 - **Space**: ハードドロップ（瞬間落下）
 - **P**: ゲームの一時停止/再開
 
-## API ルート
+## ゲームルール
 
-- `GET /api/score`: 上位10スコアの取得
-- `POST /api/score`: 新しいスコアの保存（認証必須）
-- `GET|POST /api/auth/[...nextauth]`: NextAuth.js エンドポイント
+- 7種類のテトロミノ（I, O, T, S, Z, J, L）を使用
+- 横一列が完成するとラインが消去されます
+- 10ライン消去するごとにレベルアップし、落下速度が上がります
+- スコアは消去したライン数とレベルに応じて計算されます
+- ハードドロップでボーナスポイントを獲得できます
 
-## データベーススキーマ
+## スコア計算
 
-- **User**: id, name, email, image (NextAuth.js 標準)
-- **Score**: id, userId, points, createdAt
-- **Account/Session**: NextAuth.js テーブル
-
-## デプロイ
-
-### Vercel
-
-1. コードを GitHub にプッシュ
-2. リポジトリを Vercel に接続
-3. Vercel ダッシュボードで環境変数を設定
-4. デプロイ！
-
-### データベースのセットアップ
-
-本番環境では以下のようなクラウドデータベースを使用してください:
-- PlanetScale（推奨）
-- Railway
-- Supabase
-- AWS RDS
-
-## 環境変数
-
-| 変数 | 説明 | 必須 |
-|------|------|------|
-| `DATABASE_URL` | PostgreSQL 接続文字列 | はい |
-| `NEXTAUTH_URL` | アプリケーションの URL | はい |
-| `NEXTAUTH_SECRET` | NextAuth.js のランダムシークレット | はい |
-| `GOOGLE_CLIENT_ID` | Google OAuth クライアント ID | はい |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth クライアントシークレット | はい |
+- ライン消去: 消去ライン数 × 100 × レベル
+- ハードドロップ: 落下距離 × 2
+- 基本動作: 10ポイント
 
 ## プロジェクト構造
 
 ```
 src/
 ├── app/                    # Next.js App Router
-│   ├── api/               # API ルート
-│   ├── play/              # ゲームページ
-│   ├── ranking/           # ランキングページ
-│   └── globals.css        # グローバルスタイル
-├── components/            # React コンポーネント
-│   ├── TetrisGame.tsx    # メインゲームコンポーネント
-│   └── SessionProvider.tsx
-├── lib/                   # ユーティリティ
-│   ├── auth.ts           # NextAuth.js 設定
-│   └── prisma.ts         # データベースクライアント
-└── types/                 # TypeScript 型定義
+│   ├── globals.css        # グローバルスタイル
+│   ├── layout.tsx         # ルートレイアウト
+│   └── page.tsx           # ホームページ
+└── components/            # React コンポーネント
+    └── TetrisGame.tsx     # メインゲームコンポーネント
 ```
+
+## ビルドとデプロイ
+
+### 本番ビルド
+
+```bash
+npm run build
+npm start
+```
+
+### Vercel でのデプロイ
+
+1. コードを GitHub にプッシュ
+2. リポジトリを Vercel に接続
+3. デプロイ！
+
+## 開発
+
+### 型安全性
+
+このプロジェクトは TypeScript を使用しており、テトリスピースの型定義やコンポーネントの型安全性が保証されています。
+
+### パフォーマンス
+
+- React の `useCallback` と `useMemo` を適切に使用してパフォーマンスを最適化
+- 不要な再レンダリングを防ぐための依存関係の最適化
 
 ## ライセンス
 

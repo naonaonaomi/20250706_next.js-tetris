@@ -1,27 +1,31 @@
 {
+  // TypeScript の設定ファイル
+  // コンパイラオプションとプロジェクトの設定を定義
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "es6"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
+    "target": "es5",                    // コンパイル対象の JavaScript バージョン
+    "lib": ["dom", "dom.iterable", "es6"], // 使用可能なライブラリ
+    "allowJs": true,                    // JavaScript ファイルのコンパイルを許可
+    "skipLibCheck": true,               // 型定義ファイルの型チェックをスキップ
+    "strict": true,                     // 厳密な型チェックを有効化
+    "noEmit": true,                     // JavaScript ファイルを出力しない
+    "esModuleInterop": true,            // ES モジュールと CommonJS の相互運用性
+    "module": "esnext",                 // モジュールシステム
+    "moduleResolution": "bundler",      // モジュール解決方法
+    "resolveJsonModule": true,          // JSON ファイルのインポートを許可
+    "isolatedModules": true,            // 各ファイルを独立したモジュールとして扱う
+    "jsx": "preserve",                  // JSX を保持（Next.js が処理）
+    "incremental": true,                // 差分コンパイルを有効化
     "plugins": [
       {
-        "name": "next"
+        "name": "next"                  // Next.js TypeScript プラグイン
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"]                // パスエイリアス（@/ = src/）
     }
   },
+  // TypeScript でコンパイルするファイル
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  // コンパイル対象から除外するディレクトリ
   "exclude": ["node_modules"]
 }

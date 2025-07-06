@@ -67,6 +67,7 @@ type Piece = {
 }
 
 export default function TetrisGame() {
+  const [isClient, setIsClient] = useState(false)
   const [board, setBoard] = useState<number[]>(new Array(BOARD_SIZE).fill(0))
   const [currentPiece, setCurrentPiece] = useState<Piece | null>(null)
   const [score, setScore] = useState(0)
@@ -75,6 +76,10 @@ export default function TetrisGame() {
   const [gameOver, setGameOver] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   const createEmptyBoard = useCallback(() => {
     return new Array(BOARD_SIZE).fill(0)
@@ -328,6 +333,53 @@ export default function TetrisGame() {
     setLinesCleared(0)
     setGameOver(false)
     setIsPaused(false)
+  }
+
+  if (!isClient) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+        <div className="flex gap-8">
+          <div className="flex flex-col items-center">
+            <h1 className="text-3xl font-bold mb-4">Tetris</h1>
+            <div 
+              className="grid grid-cols-10 gap-0 border-2 border-gray-500 p-2 bg-gray-800"
+              style={{ width: 'fit-content' }}
+            >
+              {new Array(BOARD_SIZE).fill(0).map((_, index) => (
+                <div
+                  key={index}
+                  className="w-6 h-6 border border-gray-300 bg-gray-100"
+                />
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-4 min-w-48">
+            <div className="bg-gray-800 p-4 rounded">
+              <h2 className="text-xl font-bold mb-2">Score</h2>
+              <p className="text-2xl">0</p>
+            </div>
+            <div className="bg-gray-800 p-4 rounded">
+              <h2 className="text-xl font-bold mb-2">Level</h2>
+              <p className="text-2xl">1</p>
+            </div>
+            <div className="bg-gray-800 p-4 rounded">
+              <h2 className="text-xl font-bold mb-2">Lines</h2>
+              <p className="text-2xl">0</p>
+            </div>
+            <div className="bg-gray-800 p-4 rounded">
+              <h2 className="text-lg font-bold mb-2">Controls</h2>
+              <div className="text-sm space-y-1">
+                <p>← → : Move</p>
+                <p>↓ : Soft drop</p>
+                <p>↑ : Rotate</p>
+                <p>Space : Hard drop</p>
+                <p>P : Pause</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
