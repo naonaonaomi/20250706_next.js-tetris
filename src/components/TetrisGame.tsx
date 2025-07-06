@@ -75,10 +75,37 @@ export default function TetrisGame() {
   const [linesCleared, setLinesCleared] = useState(0)
   const [gameOver, setGameOver] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false)
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
     setIsClient(true)
+    
+    if (typeof window !== 'undefined') {
+      audioRef.current = new Audio('/audio/コロブチカ.mp3')
+      audioRef.current.loop = true
+      audioRef.current.volume = 0.3
+      audioRef.current.addEventListener('loadeddata', () => {
+        console.log('Audio loaded successfully')
+      })
+      audioRef.current.addEventListener('error', (e) => {
+        console.error('Audio error:', e)
+      })
+      audioRef.current.addEventListener('play', () => {
+        setIsMusicPlaying(true)
+      })
+      audioRef.current.addEventListener('pause', () => {
+        setIsMusicPlaying(false)
+      })
+    }
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
   }, [])
 
   const createEmptyBoard = useCallback(() => {
@@ -204,6 +231,17 @@ export default function TetrisGame() {
     }
   }, [currentPiece, board, gameOver, isPaused, rotatePiece, isValidPosition])
 
+  const calculateGhostPosition = useCallback((piece: Piece) => {
+    if (!piece) return null
+    
+    let ghostY = piece.y
+    while (isValidPosition(piece, board, piece.x, ghostY + 1)) {
+      ghostY++
+    }
+    
+    return { ...piece, y: ghostY }
+  }, [board, isValidPosition])
+
   const hardDrop = useCallback(() => {
     if (!currentPiece || gameOver || isPaused) return
     
@@ -245,11 +283,11 @@ export default function TetrisGame() {
         break
       case 'ArrowUp':
         e.preventDefault()
-        rotatePieceHandler()
-        break
-      case ' ':
-        e.preventDefault()
         hardDrop()
+        break
+      case 'Shift':
+        e.preventDefault()
+        rotatePieceHandler()
         break
       case 'p':
       case 'P':
@@ -275,18 +313,25 @@ export default function TetrisGame() {
       if (gameLoopRef.current) {
         clearInterval(gameLoopRef.current)
       }
+      if (audioRef.current) {
+        audioRef.current.pause()
+      }
       return
     }
 
     const dropInterval = Math.max(50, 1000 - (level - 1) * 100)
     gameLoopRef.current = setInterval(() => movePiece(0, 1), dropInterval)
+    
+    if (audioRef.current && !isMusicPlaying) {
+      audioRef.current.play().catch(console.error)
+    }
 
     return () => {
       if (gameLoopRef.current) {
         clearInterval(gameLoopRef.current)
       }
     }
-  }, [movePiece, level, gameOver, isPaused])
+  }, [movePiece, level, gameOver, isPaused, isMusicPlaying])
 
   useEffect(() => {
     if (!currentPiece) {
@@ -296,6 +341,22 @@ export default function TetrisGame() {
 
   const renderBoard = () => {
     const displayBoard = [...board]
+    
+    const ghostPiece = currentPiece ? calculateGhostPosition(currentPiece) : null
+    
+    if (ghostPiece && currentPiece && ghostPiece.y !== currentPiece.y) {
+      for (let py = 0; py < ghostPiece.shape.length; py++) {
+        for (let px = 0; px < ghostPiece.shape[py].length; px++) {
+          if (ghostPiece.shape[py][px]) {
+            const x = ghostPiece.x + px
+            const y = ghostPiece.y + py
+            if (y >= 0 && y < BOARD_HEIGHT && x >= 0 && x < BOARD_WIDTH) {
+              displayBoard[y * BOARD_WIDTH + x] = 3
+            }
+          }
+        }
+      }
+    }
     
     if (currentPiece) {
       for (let py = 0; py < currentPiece.shape.length; py++) {
@@ -314,6 +375,7 @@ export default function TetrisGame() {
     return displayBoard.map((cell, index) => {
       const cellClass = cell === 1 ? 'bg-gray-600' : 
                        cell === 2 ? (currentPiece?.color || 'bg-gray-400') : 
+                       cell === 3 ? (currentPiece?.color || 'bg-gray-400') + ' opacity-30' :
                        'bg-gray-100'
       
       return (
@@ -333,6 +395,21 @@ export default function TetrisGame() {
     setLinesCleared(0)
     setGameOver(false)
     setIsPaused(false)
+    
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0
+      audioRef.current.play().catch(console.error)
+    }
+  }
+
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isMusicPlaying) {
+        audioRef.current.pause()
+      } else {
+        audioRef.current.play().catch(console.error)
+      }
+    }
   }
 
   if (!isClient) {
@@ -355,24 +432,28 @@ export default function TetrisGame() {
           </div>
           <div className="flex flex-col gap-4 min-w-48">
             <div className="bg-gray-800 p-4 rounded">
-              <h2 className="text-xl font-bold mb-2">Score</h2>
-              <p className="text-2xl">0</p>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Score</span>
+                  <span className="text-lg font-bold">0</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Level</span>
+                  <span className="text-lg font-bold">1</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Lines</span>
+                  <span className="text-lg font-bold">0</span>
+                </div>
+              </div>
             </div>
+            
             <div className="bg-gray-800 p-4 rounded">
-              <h2 className="text-xl font-bold mb-2">Level</h2>
-              <p className="text-2xl">1</p>
-            </div>
-            <div className="bg-gray-800 p-4 rounded">
-              <h2 className="text-xl font-bold mb-2">Lines</h2>
-              <p className="text-2xl">0</p>
-            </div>
-            <div className="bg-gray-800 p-4 rounded">
-              <h2 className="text-lg font-bold mb-2">Controls</h2>
               <div className="text-sm space-y-1">
                 <p>← → : Move</p>
                 <p>↓ : Soft drop</p>
-                <p>↑ : Rotate</p>
-                <p>Space : Hard drop</p>
+                <p>↑ : Hard drop</p>
+                <p>Shift : Rotate</p>
                 <p>P : Pause</p>
               </div>
             </div>
@@ -397,38 +478,45 @@ export default function TetrisGame() {
         
         <div className="flex flex-col gap-4 min-w-48">
           <div className="bg-gray-800 p-4 rounded">
-            <h2 className="text-xl font-bold mb-2">Score</h2>
-            <p className="text-2xl">{score}</p>
-          </div>
-          
-          <div className="bg-gray-800 p-4 rounded">
-            <h2 className="text-xl font-bold mb-2">Level</h2>
-            <p className="text-2xl">{level}</p>
-          </div>
-          
-          <div className="bg-gray-800 p-4 rounded">
-            <h2 className="text-xl font-bold mb-2">Lines</h2>
-            <p className="text-2xl">{linesCleared}</p>
-          </div>
-          
-          <div className="bg-gray-800 p-4 rounded">
-            <h2 className="text-lg font-bold mb-2">Controls</h2>
-            <div className="text-sm space-y-1">
-              <p>← → : Move</p>
-              <p>↓ : Soft drop</p>
-              <p>↑ : Rotate</p>
-              <p>Space : Hard drop</p>
-              <p>P : Pause</p>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Score</span>
+                <span className="text-lg font-bold">{score}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Level</span>
+                <span className="text-lg font-bold">{level}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm">Lines</span>
+                <span className="text-lg font-bold">{linesCleared}</span>
+              </div>
             </div>
           </div>
           
+            <div className="bg-gray-800 p-4 rounded">
+              <div className="text-sm space-y-1">
+                <p>← → : Move</p>
+                <p>↓ : Soft drop</p>
+                <p>↑ : Hard drop</p>
+                <p>Shift : Rotate</p>
+                <p>P : Pause</p>
+              </div>
+            </div>
+            
+            <button
+              onClick={toggleMusic}
+              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded w-full"
+            >
+              {isMusicPlaying ? '🔇 Music OFF' : '🎵 Music ON'}
+            </button>
+          
           {gameOver && (
-            <div className="bg-red-600 p-4 rounded text-center">
-              <h2 className="text-xl font-bold mb-2">Game Over!</h2>
+            <div className="bg-green-600 p-4 rounded text-center">
               <p className="mb-4">Final Score: {score}</p>
               <button
                 onClick={resetGame}
-                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+                className="bg-white hover:bg-gray-100 text-gray-800 px-4 py-2 rounded"
               >
                 Play Again
               </button>
