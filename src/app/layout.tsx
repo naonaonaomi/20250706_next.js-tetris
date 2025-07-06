@@ -1,13 +1,12 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import SessionProvider from '@/components/SessionProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Tetris Game',
-  description: 'A Tetris game with authentication and score tracking',
+  description: 'A classic Tetris game built with Next.js',
 }
 
 export default function RootLayout({
@@ -18,9 +17,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SessionProvider>
-          {children}
-        </SessionProvider>
+        {children}
       </body>
     </html>
   )

@@ -59,13 +59,16 @@ const TETROMINOS = {
 
 const TETROMINO_KEYS = Object.keys(TETROMINOS) as (keyof typeof TETROMINOS)[]
 
-interface TetrisGameProps {
-  onGameOver: (score: number) => void
+type Piece = {
+  shape: number[][]
+  color: string
+  x: number
+  y: number
 }
 
-export default function TetrisGame({ onGameOver }: TetrisGameProps) {
+export default function TetrisGame() {
   const [board, setBoard] = useState<number[]>(new Array(BOARD_SIZE).fill(0))
-  const [currentPiece, setCurrentPiece] = useState<any>(null)
+  const [currentPiece, setCurrentPiece] = useState<Piece | null>(null)
   const [score, setScore] = useState(0)
   const [level, setLevel] = useState(1)
   const [linesCleared, setLinesCleared] = useState(0)
@@ -88,7 +91,7 @@ export default function TetrisGame({ onGameOver }: TetrisGameProps) {
     }
   }, [])
 
-  const isValidPosition = useCallback((piece: any, board: number[], x: number, y: number) => {
+  const isValidPosition = useCallback((piece: Piece, board: number[], x: number, y: number) => {
     for (let py = 0; py < piece.shape.length; py++) {
       for (let px = 0; px < piece.shape[py].length; px++) {
         if (piece.shape[py][px]) {
@@ -108,7 +111,7 @@ export default function TetrisGame({ onGameOver }: TetrisGameProps) {
     return true
   }, [])
 
-  const placePiece = useCallback((piece: any, board: number[]) => {
+  const placePiece = useCallback((piece: Piece, board: number[]) => {
     const newBoard = [...board]
     for (let py = 0; py < piece.shape.length; py++) {
       for (let px = 0; px < piece.shape[py].length; px++) {
@@ -148,11 +151,11 @@ export default function TetrisGame({ onGameOver }: TetrisGameProps) {
     return { board: newBoard, linesCleared }
   }, [])
 
-  const rotatePiece = useCallback((piece: any) => {
+  const rotatePiece = useCallback((piece: Piece) => {
     const rotated = {
       ...piece,
-      shape: piece.shape[0].map((_: any, index: number) =>
-        piece.shape.map((row: any) => row[index]).reverse()
+      shape: piece.shape[0].map((_, index: number) =>
+        piece.shape.map((row: number[]) => row[index]).reverse()
       )
     }
     return rotated
@@ -180,13 +183,12 @@ export default function TetrisGame({ onGameOver }: TetrisGameProps) {
       const newPiece = randomTetromino()
       if (!isValidPosition(newPiece, clearedBoard, newPiece.x, newPiece.y)) {
         setGameOver(true)
-        onGameOver(score + cleared * 100 * level + 10)
         return
       }
       
       setCurrentPiece(newPiece)
     }
-  }, [currentPiece, board, gameOver, isPaused, isValidPosition, placePiece, clearLines, randomTetromino, level, score, onGameOver])
+  }, [currentPiece, board, gameOver, isPaused, isValidPosition, placePiece, clearLines, randomTetromino, level])
 
   const rotatePieceHandler = useCallback(() => {
     if (!currentPiece || gameOver || isPaused) return
@@ -216,12 +218,11 @@ export default function TetrisGame({ onGameOver }: TetrisGameProps) {
     const newPiece = randomTetromino()
     if (!isValidPosition(newPiece, clearedBoard, newPiece.x, newPiece.y)) {
       setGameOver(true)
-      onGameOver(score + cleared * 100 * level + (newY - currentPiece.y) * 2)
       return
     }
     
     setCurrentPiece(newPiece)
-  }, [currentPiece, board, gameOver, isPaused, isValidPosition, placePiece, clearLines, randomTetromino, level, score, onGameOver])
+  }, [currentPiece, board, gameOver, isPaused, isValidPosition, placePiece, clearLines, randomTetromino, level])
 
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
     switch (e.key) {
@@ -272,11 +273,8 @@ export default function TetrisGame({ onGameOver }: TetrisGameProps) {
       return
     }
 
-    const gameLoop = () => {
-      movePiece(0, 1)
-    }
-
-    gameLoopRef.current = setInterval(gameLoop, Math.max(50, 1000 - (level - 1) * 100))
+    const dropInterval = Math.max(50, 1000 - (level - 1) * 100)
+    gameLoopRef.current = setInterval(() => movePiece(0, 1), dropInterval)
 
     return () => {
       if (gameLoopRef.current) {
@@ -308,16 +306,18 @@ export default function TetrisGame({ onGameOver }: TetrisGameProps) {
       }
     }
 
-    return displayBoard.map((cell, index) => (
-      <div
-        key={index}
-        className={`w-6 h-6 border border-gray-300 ${
-          cell === 1 ? 'bg-gray-600' : 
-          cell === 2 ? (currentPiece?.color || 'bg-gray-400') : 
-          'bg-gray-100'
-        }`}
-      />
-    ))
+    return displayBoard.map((cell, index) => {
+      const cellClass = cell === 1 ? 'bg-gray-600' : 
+                       cell === 2 ? (currentPiece?.color || 'bg-gray-400') : 
+                       'bg-gray-100'
+      
+      return (
+        <div
+          key={index}
+          className={`w-6 h-6 border border-gray-300 ${cellClass}`}
+        />
+      )
+    })
   }
 
   const resetGame = () => {
