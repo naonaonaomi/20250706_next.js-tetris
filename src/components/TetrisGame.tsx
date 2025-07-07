@@ -345,12 +345,12 @@ export default function TetrisGame() {
   // --- サーバーサイドレンダリング時のプレースホルダー ---
   if (!isClient) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="flex gap-8">
           <div className="flex flex-col items-center">
             <h1 className="text-3xl font-bold mb-4">Tetris</h1>
             <div 
-              className="grid grid-cols-10 gap-0 border-2 border-gray-500 p-2 bg-gray-800"
+              className="grid grid-cols-10 border-gray-500 p-2 bg-gray-800 border-2"
               style={{ width: 'fit-content' }}
             >
               {new Array(BOARD_SIZE).fill(0).map((_, index) => (
@@ -395,7 +395,7 @@ export default function TetrisGame() {
 
   // --- メインの描画 ---
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100 p-4 font-sans">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
       <div className="flex gap-10 md:gap-16">
         <div className="flex flex-row items-end gap-10">
           {/* スコア＋音楽切替ボタン */}
@@ -403,7 +403,7 @@ export default function TetrisGame() {
             {/* 音楽切替ボタン */}
             <button
               onClick={toggleMusic}
-              className="mb-1 px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-100 text-sm font-bold flex items-center gap-1 transition-all duration-150"
+              className="mb-1 px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-sm font-bold flex items-center gap-1"
               title={isMusicPlaying ? 'ミュージックOFF' : 'ミュージックON'}
               aria-label="ミュージック切替"
             >
@@ -417,9 +417,9 @@ export default function TetrisGame() {
             </div>
           </div>
           <div className="flex flex-col items-center">
-            <h1 className="text-4xl font-extrabold mb-6 tracking-tight drop-shadow-lg text-slate-100">Tetris</h1>
+            <h1 className="text-4xl font-extrabold mb-6 tracking-tight drop-shadow-lg">Tetris</h1>
             <div 
-              className="relative grid grid-cols-10 gap-0 border-4 border-slate-700 p-2 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl"
+              className="relative grid grid-cols-10 border-slate-700 p-2 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl border-4"
               style={{ width: 'fit-content' }}
             >
               {renderBoard()}
