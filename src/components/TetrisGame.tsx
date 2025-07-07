@@ -42,6 +42,7 @@ export default function TetrisGame() {
   const se2Ref = useRef<HTMLAudioElement | null>(null)
   const se3Ref = useRef<HTMLAudioElement | null>(null)
   const se4Ref = useRef<HTMLAudioElement | null>(null)
+  const hardDropSERef = useRef<HTMLAudioElement | null>(null)
 
   // --- ユーティリティ関数 ---
   // 空のボードを作成
@@ -186,6 +187,11 @@ export default function TetrisGame() {
   // ハードドロップ（即座に最下部まで落とす）
   const hardDrop = useCallback(() => {
     if (!currentPiece || gameOver || isPaused) return
+    // ハードドロップSE再生
+    if (hardDropSERef.current) {
+      hardDropSERef.current.currentTime = 0
+      hardDropSERef.current.play().catch(() => {})
+    }
     let newY = currentPiece.y
     while (isValidPosition(currentPiece, board, currentPiece.x, newY + 1)) newY++
     const droppedPiece = { ...currentPiece, y: newY }
@@ -333,6 +339,9 @@ export default function TetrisGame() {
       se3Ref.current.volume = 0.7
       se4Ref.current = new Audio('/audio/8bit回復3.mp3')
       se4Ref.current.volume = 0.7
+      // ハードドロップSE
+      hardDropSERef.current = new Audio('/audio/カーソル移動12.mp3')
+      hardDropSERef.current.volume = 0.7
     }
     return () => {
       if (audioRef.current) {
@@ -344,6 +353,7 @@ export default function TetrisGame() {
       if (se2Ref.current) { se2Ref.current.pause(); se2Ref.current = null }
       if (se3Ref.current) { se3Ref.current.pause(); se3Ref.current = null }
       if (se4Ref.current) { se4Ref.current.pause(); se4Ref.current = null }
+      if (hardDropSERef.current) { hardDropSERef.current.pause(); hardDropSERef.current = null }
     }
   }, [])
 
