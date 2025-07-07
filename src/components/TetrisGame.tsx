@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 
+// テトリスのボードの幅と高さを定義
 const BOARD_WIDTH = 10
 const BOARD_HEIGHT = 20
 const BOARD_SIZE = BOARD_WIDTH * BOARD_HEIGHT
 
+// テトリミノ（ブロックの形と色）の定義
 const TETROMINOS = {
   I: {
     shape: [
@@ -57,8 +59,11 @@ const TETROMINOS = {
   }
 }
 
+// テトリミノのキー一覧
 const TETROMINO_KEYS = Object.keys(TETROMINOS) as (keyof typeof TETROMINOS)[]
 
+// ピース（テトリミノ）の型定義
+// shape: 形状, color: 色, x: 横位置, y: 縦位置
 type Piece = {
   shape: number[][]
   color: string
@@ -67,18 +72,20 @@ type Piece = {
 }
 
 export default function TetrisGame() {
-  const [isClient, setIsClient] = useState(false)
-  const [board, setBoard] = useState<number[]>(new Array(BOARD_SIZE).fill(0))
-  const [currentPiece, setCurrentPiece] = useState<Piece | null>(null)
-  const [score, setScore] = useState(0)
-  const [level, setLevel] = useState(1)
-  const [linesCleared, setLinesCleared] = useState(0)
-  const [gameOver, setGameOver] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
-  const [isMusicPlaying, setIsMusicPlaying] = useState(false)
-  const gameLoopRef = useRef<NodeJS.Timeout | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
 
+  const [isClient, setIsClient] = useState(false)             // クライアントサイドかどうかの判定
+  const [board, setBoard] = useState<number[]>(new Array(BOARD_SIZE).fill(0))  // ゲームボードの状態（1次元配列で管理）
+  const [currentPiece, setCurrentPiece] = useState<Piece | null>(null)  // 現在操作中のピース
+  const [score, setScore] = useState(0)                         // スコア
+  const [level, setLevel] = useState(1)                         // レベル
+  const [linesCleared, setLinesCleared] = useState(0)          // 消したライン数
+  const [gameOver, setGameOver] = useState(false)              // ゲームオーバーかどうか
+  const [isPaused, setIsPaused] = useState(false)              // ポーズ中かどうか
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false)  // 音楽再生中かどうか
+  const gameLoopRef = useRef<NodeJS.Timeout | null>(null)     // ゲームループのタイマー参照
+  const audioRef = useRef<HTMLAudioElement | null>(null)      // オーディオ要素の参照
+
+  // 初期化処理（クライアント判定と音楽の準備）
   useEffect(() => {
     setIsClient(true)
     
@@ -108,10 +115,12 @@ export default function TetrisGame() {
     }
   }, [])
 
+  // 空のボードを作成
   const createEmptyBoard = useCallback(() => {
     return new Array(BOARD_SIZE).fill(0)
   }, [])
 
+  // ランダムなテトリミノを生成
   const randomTetromino = useCallback(() => {
     const randomKey = TETROMINO_KEYS[Math.floor(Math.random() * TETROMINO_KEYS.length)]
     const tetromino = TETROMINOS[randomKey]
@@ -123,6 +132,7 @@ export default function TetrisGame() {
     }
   }, [])
 
+  // ピースが指定位置に置けるか判定
   const isValidPosition = useCallback((piece: Piece, board: number[], x: number, y: number) => {
     for (let py = 0; py < piece.shape.length; py++) {
       for (let px = 0; px < piece.shape[py].length; px++) {
@@ -143,6 +153,7 @@ export default function TetrisGame() {
     return true
   }, [])
 
+  // ピースをボードに固定
   const placePiece = useCallback((piece: Piece, board: number[]) => {
     const newBoard = [...board]
     for (let py = 0; py < piece.shape.length; py++) {
@@ -159,6 +170,7 @@ export default function TetrisGame() {
     return newBoard
   }, [])
 
+  // ラインが揃っているか判定し、消去
   const clearLines = useCallback((board: number[]) => {
     const newBoard = [...board]
     let linesCleared = 0
@@ -183,6 +195,7 @@ export default function TetrisGame() {
     return { board: newBoard, linesCleared }
   }, [])
 
+  // ピースを右回転
   const rotatePiece = useCallback((piece: Piece) => {
     const rotated = {
       ...piece,
@@ -193,6 +206,7 @@ export default function TetrisGame() {
     return rotated
   }, [])
 
+  // ピースを移動（dx: 横, dy: 縦）
   const movePiece = useCallback((dx: number, dy: number) => {
     if (!currentPiece || gameOver || isPaused) return
     
@@ -222,6 +236,7 @@ export default function TetrisGame() {
     }
   }, [currentPiece, board, gameOver, isPaused, isValidPosition, placePiece, clearLines, randomTetromino, level])
 
+  // ピースを回転させるハンドラ
   const rotatePieceHandler = useCallback(() => {
     if (!currentPiece || gameOver || isPaused) return
     
@@ -231,6 +246,7 @@ export default function TetrisGame() {
     }
   }, [currentPiece, board, gameOver, isPaused, rotatePiece, isValidPosition])
 
+  // ゴーストピース（落下位置の影）を計算
   const calculateGhostPosition = useCallback((piece: Piece) => {
     if (!piece) return null
     
@@ -242,6 +258,7 @@ export default function TetrisGame() {
     return { ...piece, y: ghostY }
   }, [board, isValidPosition])
 
+  // ハードドロップ（即座に最下部まで落とす）
   const hardDrop = useCallback(() => {
     if (!currentPiece || gameOver || isPaused) return
     
@@ -267,6 +284,7 @@ export default function TetrisGame() {
     setCurrentPiece(newPiece)
   }, [currentPiece, board, gameOver, isPaused, isValidPosition, placePiece, clearLines, randomTetromino, level])
 
+  // キーボード操作のハンドラ
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
     switch (e.key) {
       case 'ArrowLeft':
@@ -297,17 +315,20 @@ export default function TetrisGame() {
     }
   }, [movePiece, rotatePieceHandler, hardDrop])
 
+  // キーイベントの登録・解除
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [handleKeyPress])
 
+  // 10ラインごとにレベルアップ
   useEffect(() => {
     if (linesCleared > 0 && linesCleared % 10 === 0) {
       setLevel(prev => prev + 1)
     }
   }, [linesCleared])
 
+  // ゲームループ（自動落下や音楽再生）
   useEffect(() => {
     if (gameOver || isPaused) {
       if (gameLoopRef.current) {
@@ -319,9 +340,11 @@ export default function TetrisGame() {
       return
     }
 
+    // レベルに応じて落下速度を調整
     const dropInterval = Math.max(50, 1000 - (level - 1) * 100)
     gameLoopRef.current = setInterval(() => movePiece(0, 1), dropInterval)
     
+    // 音楽再生
     if (audioRef.current && !isMusicPlaying) {
       audioRef.current.play().catch(console.error)
     }
@@ -333,12 +356,14 @@ export default function TetrisGame() {
     }
   }, [movePiece, level, gameOver, isPaused, isMusicPlaying])
 
+  // ピースがなければ新しいピースを生成
   useEffect(() => {
     if (!currentPiece) {
       setCurrentPiece(randomTetromino())
     }
   }, [currentPiece, randomTetromino])
 
+  // ボードを描画（ゴーストピースや現在のピースも反映）
   const renderBoard = () => {
     const displayBoard = [...board]
     
@@ -387,6 +412,7 @@ export default function TetrisGame() {
     })
   }
 
+  // ゲームをリセット
   const resetGame = () => {
     setBoard(createEmptyBoard())
     setCurrentPiece(null)
@@ -402,6 +428,7 @@ export default function TetrisGame() {
     }
   }
 
+  // 音楽のON/OFF切り替え
   const toggleMusic = () => {
     if (audioRef.current) {
       if (isMusicPlaying) {
@@ -412,6 +439,7 @@ export default function TetrisGame() {
     }
   }
 
+  // サーバーサイドレンダリング時のプレースホルダー
   if (!isClient) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
@@ -450,11 +478,11 @@ export default function TetrisGame() {
             
             <div className="bg-gray-800 p-4 rounded">
               <div className="text-sm space-y-1">
-                <p>← → : Move</p>
-                <p>↓ : Soft drop</p>
-                <p>↑ : Hard drop</p>
-                <p>Shift : Rotate</p>
-                <p>P : Pause</p>
+                <p>← → : 移動</p>
+                <p>↓ : ソフトドロップ</p>
+                <p>↑ : ハードドロップ</p>
+                <p>Shift : 回転</p>
+                <p>P : ポーズ</p>
               </div>
             </div>
           </div>
@@ -463,6 +491,7 @@ export default function TetrisGame() {
     )
   }
 
+  // メインの描画部分
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
       <div className="flex gap-8">
@@ -496,11 +525,11 @@ export default function TetrisGame() {
           
             <div className="bg-gray-800 p-4 rounded">
               <div className="text-sm space-y-1">
-                <p>← → : Move</p>
-                <p>↓ : Soft drop</p>
-                <p>↑ : Hard drop</p>
-                <p>Shift : Rotate</p>
-                <p>P : Pause</p>
+                <p>← → : 移動</p>
+                <p>↓ : ソフトドロップ</p>
+                <p>↑ : ハードドロップ</p>
+                <p>Shift : 回転</p>
+                <p>P : ポーズ</p>
               </div>
             </div>
             
@@ -526,7 +555,7 @@ export default function TetrisGame() {
           {isPaused && !gameOver && (
             <div className="bg-yellow-600 p-4 rounded text-center">
               <h2 className="text-xl font-bold">Paused</h2>
-              <p>Press P to resume</p>
+              <p>Pキーで再開</p>
             </div>
           )}
         </div>
