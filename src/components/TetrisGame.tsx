@@ -13,7 +13,7 @@ const TETROMINOS = {
   T: { shape: [[0, 1, 0], [1, 1, 1]], color: 'bg-violet-400 shadow-violet-300/60' },
   S: { shape: [[0, 1, 1], [1, 1, 0]], color: 'bg-lime-300 shadow-lime-200/60' },
   Z: { shape: [[1, 1, 0], [0, 1, 1]], color: 'bg-pink-400 shadow-pink-200/60' },
-  J: { shape: [[1, 0, 0], [1, 1, 1]], color: 'bg-indigo-400 shadow-indigo-300/60' },
+  J: { shape: [[1, 0, 0], [1, 1, 1]], color: 'bg-blue-800 shadow-blue-700/60' },
   L: { shape: [[0, 0, 1], [1, 1, 1]], color: 'bg-orange-300 shadow-orange-200/60' }
 }
 const TETROMINO_KEYS = Object.keys(TETROMINOS) as (keyof typeof TETROMINOS)[]
@@ -31,7 +31,6 @@ export default function TetrisGame() {
   const [board, setBoard] = useState<number[]>(new Array(BOARD_SIZE).fill(0))
   const [currentPiece, setCurrentPiece] = useState<Piece | null>(null)
   const [score, setScore] = useState(0)
-  const [level, setLevel] = useState(1)
   const [linesCleared, setLinesCleared] = useState(0)
   const [gameOver, setGameOver] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
@@ -67,7 +66,7 @@ export default function TetrisGame() {
       shape: tetromino.shape,
       color: tetromino.color,
       x: Math.floor(BOARD_WIDTH / 2) - Math.floor(tetromino.shape[0].length / 2),
-      y: 0
+      y: -1
     }
   }, [bag, shuffleBag])
 
@@ -152,7 +151,7 @@ export default function TetrisGame() {
       const { board: clearedBoard, linesCleared: cleared } = clearLines(newBoard)
       setBoard(clearedBoard)
       setLinesCleared(prev => prev + cleared)
-      setScore(prev => prev + cleared * 100 * level + 10)
+      setScore(prev => prev + cleared * 100 * (Math.floor((linesCleared + cleared) / 10) + 1) + 10)
       const nextPiece = randomTetromino()
       if (!isValidPosition(nextPiece, clearedBoard, nextPiece.x, nextPiece.y)) {
         setGameOver(true)
@@ -160,7 +159,7 @@ export default function TetrisGame() {
       }
       setCurrentPiece(nextPiece)
     }
-  }, [currentPiece, board, gameOver, isPaused, isValidPosition, placePiece, clearLines, randomTetromino, level])
+  }, [currentPiece, board, gameOver, isPaused, isValidPosition, placePiece, clearLines, randomTetromino, linesCleared])
 
   // ピースを回転させるハンドラ
   const rotatePieceHandler = useCallback(() => {
@@ -179,14 +178,14 @@ export default function TetrisGame() {
     const { board: clearedBoard, linesCleared: cleared } = clearLines(newBoard)
     setBoard(clearedBoard)
     setLinesCleared(prev => prev + cleared)
-    setScore(prev => prev + cleared * 100 * level + (newY - currentPiece.y) * 2)
+    setScore(prev => prev + cleared * 100 * (Math.floor((linesCleared + cleared) / 10) + 1) + (newY - currentPiece.y) * 2)
     const nextPiece = randomTetromino()
     if (!isValidPosition(nextPiece, clearedBoard, nextPiece.x, nextPiece.y)) {
       setGameOver(true)
       return
     }
     setCurrentPiece(nextPiece)
-  }, [currentPiece, board, gameOver, isPaused, isValidPosition, placePiece, clearLines, randomTetromino, level])
+  }, [currentPiece, board, gameOver, isPaused, isValidPosition, placePiece, clearLines, randomTetromino, linesCleared])
 
   // --- イベントハンドラ ---
   // キーボード操作のハンドラ
@@ -207,7 +206,6 @@ export default function TetrisGame() {
     setBoard(createEmptyBoard())
     setCurrentPiece(null)
     setScore(0)
-    setLevel(1)
     setLinesCleared(0)
     setGameOver(false)
     setIsPaused(false)
@@ -315,13 +313,6 @@ export default function TetrisGame() {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [handleKeyPress])
 
-  // 10ラインごとにレベルアップ
-  useEffect(() => {
-    if (linesCleared > 0 && linesCleared % 10 === 0) {
-      setLevel(prev => prev + 1)
-    }
-  }, [linesCleared])
-
   // ゲームループ（自動落下や音楽再生）
   useEffect(() => {
     if (gameOver || isPaused) {
@@ -329,15 +320,22 @@ export default function TetrisGame() {
       if (audioRef.current) audioRef.current.pause()
       return
     }
-    const dropInterval = Math.max(50, 1000 - (level - 1) * 100)
+    const dropInterval = Math.max(50, 1000 - (Math.floor(linesCleared / 10) + 1 - 1) * 100)
     gameLoopRef.current = setInterval(() => movePiece(0, 1), dropInterval)
-    if (audioRef.current && !isMusicPlaying) {
-      audioRef.current.play().catch(console.error)
-    }
     return () => {
       if (gameLoopRef.current) clearInterval(gameLoopRef.current)
     }
-  }, [movePiece, level, gameOver, isPaused, isMusicPlaying])
+  }, [movePiece, linesCleared, gameOver, isPaused])
+
+  // isMusicPlayingの変化で音楽再生/停止を制御
+  useEffect(() => {
+    if (!audioRef.current) return
+    if (isMusicPlaying) {
+      audioRef.current.play().catch(console.error)
+    } else {
+      audioRef.current.pause()
+    }
+  }, [isMusicPlaying])
 
   // ピースがなければ新しいピースを生成
   useEffect(() => {
@@ -368,15 +366,15 @@ export default function TetrisGame() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Score</span>
-                  <span className="text-lg font-bold">0</span>
+                  <span className="text-lg font-bold min-w-[6ch] text-right">0</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Level</span>
-                  <span className="text-lg font-bold">1</span>
+                  <span className="text-lg font-bold min-w-[6ch] text-right">1</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Lines</span>
-                  <span className="text-lg font-bold">0</span>
+                  <span className="text-lg font-bold min-w-[6ch] text-right">0</span>
                 </div>
               </div>
             </div>
@@ -399,32 +397,48 @@ export default function TetrisGame() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100 p-4 font-sans">
       <div className="flex gap-10 md:gap-16">
-        <div className="flex flex-col items-center">
-          <h1 className="text-4xl font-extrabold mb-6 tracking-tight drop-shadow-lg text-slate-100">Tetris</h1>
-          <div 
-            className="grid grid-cols-10 gap-0 border-4 border-slate-700 p-2 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl"
-            style={{ width: 'fit-content' }}
-          >
-            {renderBoard()}
+        <div className="flex flex-row items-end gap-10">
+          {/* スコア＋音楽切替ボタン */}
+          <div className="flex flex-col items-center gap-1">
+            {/* 音楽切替ボタン */}
+            <button
+              onClick={toggleMusic}
+              className="mb-1 px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-100 text-sm font-bold flex items-center gap-1 transition-all duration-150"
+              title={isMusicPlaying ? 'ミュージックOFF' : 'ミュージックON'}
+              aria-label="ミュージック切替"
+            >
+              {isMusicPlaying ? '🎵 ON' : '🔇 OFF'}
+            </button>
+            {/* スコア表示 */}
+            <div className="flex flex-col text-xs text-slate-400 bg-slate-900/70 rounded px-2 py-1 select-none items-center gap-1">
+              <div>Score: <span className="inline-block min-w-[6ch] text-right">{score}</span></div>
+              <div>Level: <span className="inline-block min-w-[6ch] text-right">{Math.floor(linesCleared / 10) + 1}</span></div>
+              <div>Lines: <span className="inline-block min-w-[6ch] text-right">{linesCleared}</span></div>
+            </div>
+          </div>
+          <div className="flex flex-col items-center">
+            <h1 className="text-4xl font-extrabold mb-6 tracking-tight drop-shadow-lg text-slate-100">Tetris</h1>
+            <div 
+              className="relative grid grid-cols-10 gap-0 border-4 border-slate-700 p-2 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl"
+              style={{ width: 'fit-content' }}
+            >
+              {renderBoard()}
+              {/* 一時停止表示 */}
+              {isPaused && !gameOver && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+                  <div className="bg-slate-900/80 rounded-xl px-4 py-3 flex flex-col items-center shadow-xl border border-slate-200/10">
+                    <span className="text-xl mb-1 font-bold text-white drop-shadow flex items-center gap-1">
+                      <svg xmlns='http://www.w3.org/2000/svg' className='inline w-5 h-5 mr-1 text-indigo-300' fill='none' viewBox='0 0 24 24' stroke='currentColor'><rect x='6' y='4' width='4' height='16' rx='2'/><rect x='14' y='4' width='4' height='16' rx='2'/></svg>
+                      Paused
+                    </span>
+                    <span className="text-xs text-slate-200">Pキーで再開</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex flex-col gap-6 min-w-56">
-          <div className="bg-white/5 backdrop-blur border border-white/10 shadow-xl rounded-xl p-6">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-300">Score</span>
-                <span className="text-2xl font-bold text-sky-300 drop-shadow">{score}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-300">Level</span>
-                <span className="text-2xl font-bold text-indigo-200 drop-shadow">{level}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-300">Lines</span>
-                <span className="text-2xl font-bold text-amber-100 drop-shadow">{linesCleared}</span>
-              </div>
-            </div>
-          </div>
           <div className="bg-white/5 backdrop-blur border border-white/10 shadow-xl rounded-xl p-6">
             <div className="text-sm space-y-1 text-slate-200">
               <p>← → : 移動</p>
@@ -434,12 +448,6 @@ export default function TetrisGame() {
               <p>P : ポーズ</p>
             </div>
           </div>
-          <button
-            onClick={toggleMusic}
-            className="bg-gradient-to-r from-sky-400 via-indigo-300 to-lime-300 hover:from-sky-500 hover:to-lime-400 text-slate-900 font-bold px-4 py-2 rounded-xl shadow-lg transition-all duration-200 w-full"
-          >
-            {isMusicPlaying ? '🔇 Music OFF' : '🎵 Music ON'}
-          </button>
           {gameOver && (
             <div className="bg-gradient-to-r from-lime-300 to-amber-200 p-4 rounded-xl text-center shadow-xl border border-white/10">
               <p className="mb-4 text-lg font-bold text-slate-900 drop-shadow">Final Score: {score}</p>
@@ -449,12 +457,6 @@ export default function TetrisGame() {
               >
                 Play Again
               </button>
-            </div>
-          )}
-          {isPaused && !gameOver && (
-            <div className="bg-indigo-200/90 p-4 rounded-xl text-center shadow-xl border border-white/10">
-              <h2 className="text-xl font-bold text-slate-900 drop-shadow">Paused</h2>
-              <p className="text-slate-900">Pキーで再開</p>
             </div>
           )}
         </div>
