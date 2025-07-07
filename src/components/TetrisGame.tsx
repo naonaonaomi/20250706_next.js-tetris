@@ -38,6 +38,10 @@ export default function TetrisGame() {
   const [bag, setBag] = useState<(keyof typeof TETROMINOS)[]>([])
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const se1Ref = useRef<HTMLAudioElement | null>(null)
+  const se2Ref = useRef<HTMLAudioElement | null>(null)
+  const se3Ref = useRef<HTMLAudioElement | null>(null)
+  const se4Ref = useRef<HTMLAudioElement | null>(null)
 
   // --- ユーティリティ関数 ---
   // 空のボードを作成
@@ -149,6 +153,17 @@ export default function TetrisGame() {
     } else if (dy > 0) {
       const newBoard = placePiece(currentPiece, board)
       const { board: clearedBoard, linesCleared: cleared } = clearLines(newBoard)
+      if (cleared > 0) {
+        let seRef: React.RefObject<HTMLAudioElement> | null = null
+        if (cleared === 1) seRef = se1Ref
+        else if (cleared === 2) seRef = se2Ref
+        else if (cleared === 3) seRef = se3Ref
+        else if (cleared >= 4) seRef = se4Ref
+        if (seRef && seRef.current) {
+          seRef.current.currentTime = 0
+          seRef.current.play().catch(() => {})
+        }
+      }
       setBoard(clearedBoard)
       setLinesCleared(prev => prev + cleared)
       setScore(prev => prev + cleared * 100 * (Math.floor((linesCleared + cleared) / 10) + 1) + 10)
@@ -176,6 +191,17 @@ export default function TetrisGame() {
     const droppedPiece = { ...currentPiece, y: newY }
     const newBoard = placePiece(droppedPiece, board)
     const { board: clearedBoard, linesCleared: cleared } = clearLines(newBoard)
+    if (cleared > 0) {
+      let seRef: React.RefObject<HTMLAudioElement> | null = null
+      if (cleared === 1) seRef = se1Ref
+      else if (cleared === 2) seRef = se2Ref
+      else if (cleared === 3) seRef = se3Ref
+      else if (cleared >= 4) seRef = se4Ref
+      if (seRef && seRef.current) {
+        seRef.current.currentTime = 0
+        seRef.current.play().catch(() => {})
+      }
+    }
     setBoard(clearedBoard)
     setLinesCleared(prev => prev + cleared)
     setScore(prev => prev + cleared * 100 * (Math.floor((linesCleared + cleared) / 10) + 1) + (newY - currentPiece.y) * 2)
@@ -298,12 +324,26 @@ export default function TetrisGame() {
       audioRef.current.addEventListener('pause', () => {
         setIsMusicPlaying(false)
       })
+      // 効果音の準備（各ライン数ごと）
+      se1Ref.current = new Audio('/audio/決定ボタンを押す53.mp3')
+      se1Ref.current.volume = 0.7
+      se2Ref.current = new Audio('/audio/maou_se_onepoint26.mp3')
+      se2Ref.current.volume = 0.7
+      se3Ref.current = new Audio('/audio/8bit詠唱2.mp3')
+      se3Ref.current.volume = 0.7
+      se4Ref.current = new Audio('/audio/8bit回復3.mp3')
+      se4Ref.current.volume = 0.7
     }
     return () => {
       if (audioRef.current) {
         audioRef.current.pause()
         audioRef.current = null
       }
+      // 効果音も解放
+      if (se1Ref.current) { se1Ref.current.pause(); se1Ref.current = null }
+      if (se2Ref.current) { se2Ref.current.pause(); se2Ref.current = null }
+      if (se3Ref.current) { se3Ref.current.pause(); se3Ref.current = null }
+      if (se4Ref.current) { se4Ref.current.pause(); se4Ref.current = null }
     }
   }, [])
 
@@ -438,8 +478,9 @@ export default function TetrisGame() {
             </div>
           </div>
         </div>
-        <div className="flex flex-col gap-6 min-w-56">
-          <div className="bg-white/5 backdrop-blur border border-white/10 shadow-xl rounded-xl p-6">
+        {/* 操作説明 */}
+        <div className="flex flex-col gap-6">
+          <div className="bg-white/5 backdrop-blur border border-white/10 shadow-xl rounded-xl p-6 mt-2">
             <div className="text-sm space-y-1 text-slate-200">
               <p>← → : 移動</p>
               <p>↓ : ソフトドロップ</p>
