@@ -8,13 +8,13 @@ const BOARD_HEIGHT = 20
 const BOARD_SIZE = BOARD_WIDTH * BOARD_HEIGHT
 
 const TETROMINOS = {
-  I: { shape: [[1, 1, 1, 1]], color: 'bg-cyan-500' },
-  O: { shape: [[1, 1], [1, 1]], color: 'bg-yellow-500' },
-  T: { shape: [[0, 1, 0], [1, 1, 1]], color: 'bg-purple-500' },
-  S: { shape: [[0, 1, 1], [1, 1, 0]], color: 'bg-green-500' },
-  Z: { shape: [[1, 1, 0], [0, 1, 1]], color: 'bg-red-500' },
-  J: { shape: [[1, 0, 0], [1, 1, 1]], color: 'bg-blue-500' },
-  L: { shape: [[0, 0, 1], [1, 1, 1]], color: 'bg-orange-500' }
+  I: { shape: [[1, 1, 1, 1]], color: 'bg-sky-400 shadow-sky-300/60' },
+  O: { shape: [[1, 1], [1, 1]], color: 'bg-amber-200 shadow-amber-100/60' },
+  T: { shape: [[0, 1, 0], [1, 1, 1]], color: 'bg-violet-400 shadow-violet-300/60' },
+  S: { shape: [[0, 1, 1], [1, 1, 0]], color: 'bg-lime-300 shadow-lime-200/60' },
+  Z: { shape: [[1, 1, 0], [0, 1, 1]], color: 'bg-pink-400 shadow-pink-200/60' },
+  J: { shape: [[1, 0, 0], [1, 1, 1]], color: 'bg-indigo-400 shadow-indigo-300/60' },
+  L: { shape: [[0, 0, 1], [1, 1, 1]], color: 'bg-orange-300 shadow-orange-200/60' }
 }
 const TETROMINO_KEYS = Object.keys(TETROMINOS) as (keyof typeof TETROMINOS)[]
 
@@ -257,14 +257,24 @@ export default function TetrisGame() {
       }
     }
     return displayBoard.map((cell, index) => {
-      const cellClass = cell === 1 ? 'bg-gray-600' : 
-                       cell === 2 ? (currentPiece?.color || 'bg-gray-400') : 
-                       cell === 3 ? (currentPiece?.color || 'bg-gray-400') + ' opacity-30' :
-                       'bg-gray-100'
+      let cellClass = ''
+      if (cell === 1) {
+        // 固定ブロック: 共通の薄いグレー色
+        cellClass = 'bg-slate-400 opacity-40 border-slate-600'
+      } else if (cell === 2) {
+        // 操作中のブロック: 通常のテトリミノ色
+        cellClass = (currentPiece?.color || 'bg-slate-400') + ' shadow-lg border-slate-300'
+      } else if (cell === 3) {
+        // ゴーストピース: さらに薄く
+        cellClass = (currentPiece?.color || 'bg-slate-400') + ' opacity-20 border-slate-700'
+      } else {
+        // 空白: 濃い背景
+        cellClass = 'bg-slate-900 border-slate-800'
+      }
       return (
         <div
           key={index}
-          className={`w-6 h-6 border border-gray-300 ${cellClass}`}
+          className={`w-6 h-6 border ${cellClass} rounded-md transition-all`}
         />
       )
     })
@@ -387,36 +397,36 @@ export default function TetrisGame() {
 
   // --- メインの描画 ---
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
-      <div className="flex gap-8">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100 p-4 font-sans">
+      <div className="flex gap-10 md:gap-16">
         <div className="flex flex-col items-center">
-          <h1 className="text-3xl font-bold mb-4">Tetris</h1>
+          <h1 className="text-4xl font-extrabold mb-6 tracking-tight drop-shadow-lg text-slate-100">Tetris</h1>
           <div 
-            className="grid grid-cols-10 gap-0 border-2 border-gray-500 p-2 bg-gray-800"
+            className="grid grid-cols-10 gap-0 border-4 border-slate-700 p-2 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl"
             style={{ width: 'fit-content' }}
           >
             {renderBoard()}
           </div>
         </div>
-        <div className="flex flex-col gap-4 min-w-48">
-          <div className="bg-gray-800 p-4 rounded">
-            <div className="space-y-2">
+        <div className="flex flex-col gap-6 min-w-56">
+          <div className="bg-white/5 backdrop-blur border border-white/10 shadow-xl rounded-xl p-6">
+            <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm">Score</span>
-                <span className="text-lg font-bold">{score}</span>
+                <span className="text-sm text-slate-300">Score</span>
+                <span className="text-2xl font-bold text-sky-300 drop-shadow">{score}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm">Level</span>
-                <span className="text-lg font-bold">{level}</span>
+                <span className="text-sm text-slate-300">Level</span>
+                <span className="text-2xl font-bold text-indigo-200 drop-shadow">{level}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm">Lines</span>
-                <span className="text-lg font-bold">{linesCleared}</span>
+                <span className="text-sm text-slate-300">Lines</span>
+                <span className="text-2xl font-bold text-amber-100 drop-shadow">{linesCleared}</span>
               </div>
             </div>
           </div>
-          <div className="bg-gray-800 p-4 rounded">
-            <div className="text-sm space-y-1">
+          <div className="bg-white/5 backdrop-blur border border-white/10 shadow-xl rounded-xl p-6">
+            <div className="text-sm space-y-1 text-slate-200">
               <p>← → : 移動</p>
               <p>↓ : ソフトドロップ</p>
               <p>↑ : ハードドロップ</p>
@@ -426,25 +436,25 @@ export default function TetrisGame() {
           </div>
           <button
             onClick={toggleMusic}
-            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded w-full"
+            className="bg-gradient-to-r from-sky-400 via-indigo-300 to-lime-300 hover:from-sky-500 hover:to-lime-400 text-slate-900 font-bold px-4 py-2 rounded-xl shadow-lg transition-all duration-200 w-full"
           >
             {isMusicPlaying ? '🔇 Music OFF' : '🎵 Music ON'}
           </button>
           {gameOver && (
-            <div className="bg-green-600 p-4 rounded text-center">
-              <p className="mb-4">Final Score: {score}</p>
+            <div className="bg-gradient-to-r from-lime-300 to-amber-200 p-4 rounded-xl text-center shadow-xl border border-white/10">
+              <p className="mb-4 text-lg font-bold text-slate-900 drop-shadow">Final Score: {score}</p>
               <button
                 onClick={resetGame}
-                className="bg-white hover:bg-gray-100 text-gray-800 px-4 py-2 rounded"
+                className="bg-white/90 hover:bg-white text-slate-900 font-bold px-4 py-2 rounded-lg shadow"
               >
                 Play Again
               </button>
             </div>
           )}
           {isPaused && !gameOver && (
-            <div className="bg-yellow-600 p-4 rounded text-center">
-              <h2 className="text-xl font-bold">Paused</h2>
-              <p>Pキーで再開</p>
+            <div className="bg-indigo-200/90 p-4 rounded-xl text-center shadow-xl border border-white/10">
+              <h2 className="text-xl font-bold text-slate-900 drop-shadow">Paused</h2>
+              <p className="text-slate-900">Pキーで再開</p>
             </div>
           )}
         </div>
